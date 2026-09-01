@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LRX Eventtechnik</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#06060e;--surf:#0d0d1c;--card:#121224;--acc:#8b5cf6;--txt:#e2e8f0;--mut:#8892a4;--brd:rgba(139,92,246,.18)}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;overflow-x:hidden}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(6,6,14,.9);backdrop-filter:blur(14px);border-bottom:1px solid var(--brd);padding:1rem 2.5rem;display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:1.3rem;font-weight:900;background:linear-gradient(130deg,#a78bfa,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav-links{display:flex;gap:2rem}.nav-links a{color:var(--mut);text-decoration:none;font-size:.88rem;transition:color .2s}.nav-links a:hover{color:var(--txt)}
+
+/* ADMIN BANNER */
+#adminBanner{display:none;position:fixed;top:57px;left:0;right:0;z-index:190;background:rgba(139,92,246,.18);border-bottom:1px solid rgba(139,92,246,.35);text-align:center;padding:.45rem 1rem;font-size:.8rem;color:#c4b5fd;letter-spacing:.03em}
+
+/* INLINE EDITING */
+[data-k]{transition:outline .15s,background .15s}
+.admin-on [data-k]{outline:1.5px dashed rgba(139,92,246,.45);border-radius:3px;cursor:text;padding:0 2px;min-width:8px;display:inline-block}
+.admin-on [data-k]:hover{background:rgba(139,92,246,.1);outline-color:rgba(139,92,246,.8)}
+.admin-on [data-k]:focus{outline:2px solid #8b5cf6;background:rgba(139,92,246,.14)}
+.admin-on [data-k][contenteditable=true]{white-space:pre-wrap}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:8rem 2rem 5rem;position:relative;overflow:hidden}
+.hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 40%,rgba(139,92,246,.14) 0%,transparent 70%)}
+.float-el{position:absolute;pointer-events:none;will-change:transform}
+.badge{display:inline-block;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);color:#c4b5fd;padding:.35rem 1.1rem;border-radius:99px;font-size:.8rem;margin-bottom:1.5rem}
+.hero h1{font-size:clamp(2.4rem,6vw,5rem);font-weight:900;line-height:1.08;margin-bottom:1.4rem}
+.grad{background:linear-gradient(130deg,#a78bfa,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero>div>p{font-size:1.1rem;color:var(--mut);max-width:580px;margin:0 auto 2.5rem;line-height:1.78}
+.ctas{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+.btn{display:inline-block;padding:.88rem 2.3rem;border-radius:99px;font-weight:700;font-size:.95rem;text-decoration:none;transition:all .22s;border:none;cursor:pointer}
+.btn-pri{background:linear-gradient(130deg,#8b5cf6,#3b82f6);color:#fff}.btn-pri:hover{transform:translateY(-3px)}
+.btn-sec{background:transparent;border:1px solid rgba(255,255,255,.18);color:var(--txt)}.btn-sec:hover{border-color:rgba(255,255,255,.4)}
+.stats{display:flex;justify-content:center;gap:3rem;margin-top:4rem;flex-wrap:wrap}
+.stat .n{font-size:2rem;font-weight:900;background:linear-gradient(130deg,#a78bfa,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat .l{font-size:.78rem;color:var(--mut);margin-top:.2rem}
+
+/* SECTIONS */
+section{padding:5rem 2rem;max-width:1080px;margin:0 auto}
+.sec-badge{display:inline-block;background:rgba(139,92,246,.1);color:#a78bfa;font-size:.72rem;padding:.25rem .75rem;border-radius:4px;margin-bottom:.6rem;letter-spacing:.08em;text-transform:uppercase}
+.sec-title{font-size:2rem;font-weight:900;margin-bottom:.75rem}
+.sec-sub{color:var(--mut);font-size:1rem;max-width:520px;line-height:1.78;margin-bottom:2.5rem}
+
+/* SLIDESHOW */
+.slideshow-wrap{background:var(--card);border:1px solid var(--brd);border-radius:22px;overflow:hidden;position:relative}
+.slides{display:flex;transition:transform .6s cubic-bezier(.77,0,.18,1)}
+.slide{min-width:100%;display:grid;grid-template-columns:1fr 1fr;align-items:center}
+@media(max-width:620px){.slide{grid-template-columns:1fr}}
+.slide-info{padding:3rem 2.5rem}
+.slide-info h3{font-size:1.6rem;font-weight:900;margin-bottom:.75rem}
+.slide-info>p{color:var(--mut);line-height:1.75;font-size:.95rem;margin-bottom:1.5rem}
+.spec-list{display:flex;flex-direction:column;gap:.5rem}
+.spec{display:flex;align-items:center;gap:.6rem;font-size:.85rem;color:var(--mut)}
+.spec::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--acc);flex-shrink:0}
+.slide-art{display:flex;align-items:center;justify-content:center;padding:2rem;background:rgba(0,0,0,.2);min-height:320px}
+@media(max-width:620px){.slide-art{display:none}}
+.slide-dots{display:flex;justify-content:center;gap:.6rem;padding:1.25rem}
+.sdot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.18);cursor:pointer;transition:all .3s;border:none}
+.sdot.active{background:var(--acc);width:24px;border-radius:4px}
+.sarrow{position:absolute;top:50%;transform:translateY(-50%);background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.25);color:var(--txt);width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.sarrow:hover{background:rgba(139,92,246,.3)}
+#prevSlide{left:.75rem}#nextSlide{right:.75rem}
+
+/* PRODUCT CARDS */
+.prod-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem}
+@media(max-width:700px){.prod-grid{grid-template-columns:1fr}}
+.prod-card{background:var(--card);border:1.5px solid var(--brd);border-radius:20px;padding:1.75rem;cursor:pointer;transition:all .3s;position:relative;overflow:visible}
+.prod-card:hover,.prod-card.selected{transform:translateY(-5px);border-color:var(--pc,#8b5cf6)}
+.prod-card.selected::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--pc,#8b5cf6);border-radius:2px 2px 0 0}
+.prod-cap-badge{display:inline-block;font-size:.72rem;font-weight:800;padding:.25rem .8rem;border-radius:99px;margin-bottom:1rem;border:1px solid currentColor;opacity:.85}
+.prod-art{display:flex;justify-content:center;align-items:center;height:120px;margin-bottom:1.25rem}
+.prod-card h3{font-size:1.1rem;font-weight:800;margin-bottom:.5rem}
+.prod-card>p{color:var(--mut);font-size:.85rem;line-height:1.65;margin-bottom:1rem}
+.prod-specs{display:flex;flex-direction:column;gap:.35rem;margin-bottom:1.25rem}
+.prod-spec{display:flex;align-items:center;gap:.5rem;font-size:.8rem;color:var(--mut);position:relative}
+.prod-spec::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--pc,#8b5cf6);flex-shrink:0}
+.prod-spec .del-spec{display:none;position:absolute;right:-20px;background:rgba(239,68,68,.2);border:none;color:#fca5a5;width:16px;height:16px;border-radius:3px;cursor:pointer;font-size:.7rem;align-items:center;justify-content:center}
+.admin-on .prod-spec .del-spec{display:flex}
+.add-spec-btn{display:none;background:rgba(139,92,246,.1);border:1px dashed rgba(139,92,246,.3);color:#a78bfa;width:100%;padding:.4rem;border-radius:7px;cursor:pointer;font-size:.78rem;transition:background .2s;margin-top:.25rem}
+.add-spec-btn:hover{background:rgba(139,92,246,.2)}
+.admin-on .add-spec-btn{display:block}
+.prod-btn{width:100%;padding:.7rem;border-radius:10px;border:1px solid var(--pc,#8b5cf6);color:var(--pc,#8b5cf6);background:transparent;cursor:pointer;font-size:.85rem;font-weight:700;transition:all .22s}
+.prod-card.selected .prod-btn,.prod-btn:hover{background:var(--pc,#8b5cf6);color:#fff}
+.selected-badge{position:absolute;top:1rem;right:1rem;font-size:.7rem;font-weight:800;padding:.2rem .6rem;border-radius:99px;background:var(--pc,#8b5cf6);color:#fff;display:none}
+.prod-card.selected .selected-badge{display:block}
+/* Admin color picker overlay */
+.prod-color-wrap{display:none;position:absolute;top:.75rem;left:.75rem;z-index:10}
+.admin-on .prod-color-wrap{display:flex;align-items:center;gap:.4rem}
+.prod-color-btn{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.3);cursor:pointer;padding:0;overflow:hidden;position:relative}
+.prod-color-btn input[type=color]{position:absolute;inset:-4px;opacity:0;cursor:pointer;width:200%;height:200%}
+
+/* CALENDAR PANEL */
+.cal-panel{max-height:0;overflow:hidden;transition:max-height .6s cubic-bezier(.4,0,.2,1),opacity .4s;opacity:0}
+.cal-panel.open{max-height:700px;opacity:1}
+.cal-inner{background:var(--card);border:1px solid var(--brd);border-radius:20px;padding:2rem;margin-top:1.5rem}
+.cal-ph{display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;padding-bottom:1.25rem;border-bottom:1px solid rgba(255,255,255,.07)}
+.cal-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.cal-ph h3{font-size:1.05rem;font-weight:800}
+.cal-ph span{font-size:.85rem;color:var(--mut)}
+.cal-legend{display:flex;gap:1.5rem;margin-bottom:1.75rem;flex-wrap:wrap}
+.leg{display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:var(--mut)}
+.ldot{width:11px;height:11px;border-radius:3px}
+.cal-months{display:grid;grid-template-columns:1fr 1fr;gap:2.5rem}
+@media(max-width:600px){.cal-months{grid-template-columns:1fr}}
+.cm-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+.cm-header h3{font-size:.95rem;font-weight:700}
+.cn{background:rgba(255,255,255,.06);border:none;color:var(--txt);border-radius:7px;width:30px;height:30px;cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.cn:hover{background:rgba(255,255,255,.14)}.cn:disabled{opacity:.2;cursor:default;pointer-events:none}
+.dh{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:.4rem}
+.dh span{font-size:.67rem;color:var(--mut);font-weight:700;text-align:center;padding:.2rem 0}
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:7px;font-size:.78rem;transition:background .15s;cursor:default}
+.day.past{color:rgba(255,255,255,.18)}.day.today{outline:1.5px solid var(--acc);font-weight:700}
+.day.avail{background:rgba(16,185,129,.12);color:#86efac}.day.avail:hover{background:rgba(16,185,129,.22)}
+.day.booked{background:rgba(239,68,68,.18);color:#fca5a5}
+.day.cal-admin:not(.past){cursor:pointer}.day.cal-admin:not(.past):hover{background:rgba(139,92,246,.3)!important}
+.cal-cta{margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+.cal-cta p{font-size:.88rem;color:var(--mut)}
+.cal-cta a{background:linear-gradient(130deg,#8b5cf6,#3b82f6);color:#fff;padding:.7rem 1.5rem;border-radius:10px;text-decoration:none;font-size:.88rem;font-weight:700;transition:opacity .2s}
+.cal-cta a:hover{opacity:.85}
+
+/* SERVICES & WHY */
+.services{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:1.25rem}
+.sc{background:var(--card);border:1px solid var(--brd);border-radius:18px;padding:2rem;transition:border-color .3s,transform .3s}
+.sc:hover{border-color:rgba(139,92,246,.5);transform:translateY(-5px)}
+.sc-icon{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:1.25rem}
+.sc h3{font-size:1.1rem;font-weight:700;margin-bottom:.6rem}
+.sc>p{color:var(--mut);font-size:.9rem;line-height:1.72}
+.sc-tag{display:inline-block;font-size:.72rem;padding:.2rem .7rem;border-radius:99px;margin-top:1rem}
+.why-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem}
+.wi{background:var(--surf);border:1px solid rgba(255,255,255,.05);border-radius:12px;padding:1.5rem}
+.wi-icon{font-size:1.4rem;margin-bottom:.6rem}
+.wi h4{font-size:.95rem;font-weight:700;margin-bottom:.4rem}
+.wi p{color:var(--mut);font-size:.85rem;line-height:1.62}
+.evt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.9rem}
+.ec{background:var(--card);border:1px solid var(--brd);border-radius:14px;padding:1.4rem 1rem;text-align:center;transition:border-color .2s,transform .2s}
+.ec:hover{border-color:rgba(139,92,246,.45);transform:translateY(-3px)}
+.ec .ei{font-size:1.8rem;margin-bottom:.45rem;display:block}
+.ec p{font-size:.82rem;color:var(--mut)}
+
+/* CONTACT */
+.cg{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+@media(max-width:580px){.cg{grid-template-columns:1fr}}
+.cc{background:var(--card);border:1px solid var(--brd);border-radius:16px;padding:2rem;transition:border-color .3s}
+.cc:hover{border-color:rgba(139,92,246,.35)}
+.cc h3{font-size:1rem;font-weight:700;margin-bottom:.4rem}
+.cc>p{color:var(--mut);font-size:.88rem;margin-bottom:1.4rem;line-height:1.65}
+.cb{display:inline-flex;align-items:center;gap:.6rem;color:#fff;padding:.8rem 1.4rem;border-radius:10px;text-decoration:none;font-weight:700;font-size:.88rem;transition:all .22s}
+.cb:hover{transform:translateY(-2px);opacity:.88}
+.ig{background:linear-gradient(130deg,#833ab4,#fd1d1d,#fcb045)}
+.em{background:linear-gradient(130deg,#8b5cf6,#3b82f6)}
+
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+footer{text-align:center;padding:3rem 2rem;color:var(--mut);font-size:.82rem;border-top:1px solid rgba(255,255,255,.05);margin-top:2rem}
+#adminTrigger{cursor:pointer;opacity:.2;transition:opacity .2s;user-select:none}
+#adminTrigger:hover{opacity:.6}
+
+/* ADMIN PANEL */
+.apanel{display:none;position:fixed;bottom:1.25rem;right:1.25rem;z-index:500;background:#0a0a1c;border:1px solid rgba(139,92,246,.4);border-radius:18px;width:270px;box-shadow:0 12px 50px rgba(0,0,0,.7);overflow:hidden}
+.apanel.on{display:block}
+.apanel-head{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.07)}
+.apanel-head strong{color:#a78bfa;font-size:.92rem}
+.apanel-close{background:none;border:none;color:var(--mut);cursor:pointer;font-size:1.1rem;line-height:1;padding:.1rem .3rem}
+.atabs{display:flex;border-bottom:1px solid rgba(255,255,255,.07)}
+.atab{flex:1;padding:.6rem;background:none;border:none;color:var(--mut);cursor:pointer;font-size:.75rem;transition:all .2s;border-bottom:2px solid transparent}
+.atab.active{color:#c4b5fd;border-bottom-color:#8b5cf6}
+.atab-content{padding:1.1rem 1.25rem;display:none;max-height:360px;overflow-y:auto}
+.atab-content.active{display:block}
+
+/* Tab: Kalender */
+.aprod-btn{width:100%;padding:.45rem .8rem;margin-bottom:.35rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:var(--mut);border-radius:8px;cursor:pointer;font-size:.8rem;text-align:left;transition:all .2s;display:flex;align-items:center;gap:.5rem}
+.aprod-btn:hover,.aprod-btn.active{background:rgba(139,92,246,.15);border-color:rgba(139,92,246,.35);color:var(--txt)}
+.aprod-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ainfo{font-size:.75rem;color:var(--mut);line-height:1.55;margin-bottom:.75rem;padding:.5rem .65rem;background:rgba(255,255,255,.03);border-radius:7px}
+
+/* Tab: Design */
+.adesign-row{display:flex;align-items:center;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.adesign-row:last-child{border:none}
+.adesign-label{font-size:.82rem;color:var(--txt)}
+.adesign-label small{display:block;color:var(--mut);font-size:.72rem;margin-top:.1rem}
+.acolor-input{width:36px;height:26px;border-radius:6px;border:1px solid rgba(255,255,255,.15);cursor:pointer;padding:1px;background:none}
+
+/* Tab: Kontakt */
+.afield{margin-bottom:.75rem}
+.afield label{display:block;font-size:.75rem;color:var(--mut);margin-bottom:.3rem}
+.afield input{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:var(--txt);border-radius:7px;padding:.45rem .6rem;font-size:.8rem;outline:none}
+.afield input:focus{border-color:rgba(139,92,246,.5)}
+.asave-btn{width:100%;padding:.55rem;background:rgba(139,92,246,.2);border:1px solid rgba(139,92,246,.35);color:#c4b5fd;border-radius:8px;cursor:pointer;font-size:.8rem;font-weight:700;transition:background .2s;margin-top:.25rem}
+.asave-btn:hover{background:rgba(139,92,246,.35)}
+.asaved{text-align:center;font-size:.72rem;color:#6ee7b7;margin-top:.4rem;height:.9rem;transition:opacity .5s}
+
+/* Footer panel */
+.apanel-foot{border-top:1px solid rgba(255,255,255,.07);padding:.75rem 1.25rem}
+.aexit-btn{width:100%;padding:.45rem;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.22);color:#fca5a5;border-radius:8px;cursor:pointer;font-size:.78rem;transition:background .2s}
+.aexit-btn:hover{background:rgba(239,68,68,.25)}
+</style>
+</head>
+<body>
+
+<div id="adminBanner">✏️ Admin-Modus – Klicke auf jeden Text zum Bearbeiten · Farben & Kontakt im Panel rechts</div>
+
+<nav>
+  <div class="logo">LRX Eventtechnik</div>
+  <div class="nav-links">
+    <a href="#anlagen">Anlagen</a>
+    <a href="#leistungen">Leistungen</a>
+    <a href="#kontakt">Kontakt</a>
+  </div>
+</nav>
+
+<!-- FLOATING ELEMENTS -->
+<div class="float-el" id="fl1" style="left:4%;top:22%"><svg width="88" height="128" viewBox="0 0 88 128" opacity=".17"><rect x="2" y="2" width="84" height="124" rx="8" fill="#1a1a3a" stroke="#8b5cf6" stroke-width="1"/><circle cx="44" cy="34" r="15" fill="none" stroke="#6d5acd" stroke-width="1.5"/><circle cx="44" cy="34" r="7" fill="none" stroke="#8b5cf6" stroke-width="1"/><circle cx="44" cy="34" r="3" fill="#8b5cf6"/><circle cx="44" cy="85" r="32" fill="none" stroke="#5a4aad" stroke-width="1.5"/><circle cx="44" cy="85" r="22" fill="none" stroke="#7c5cf6" stroke-width="1.1"/><circle cx="44" cy="85" r="13" fill="none" stroke="#8b5cf6" stroke-width="1"/><circle cx="44" cy="85" r="6" fill="#1a1a35" stroke="#a78bfa" stroke-width=".8"/><circle cx="44" cy="85" r="2.5" fill="#8b5cf6"/></svg></div>
+<div class="float-el" id="fl2" style="right:5%;top:28%"><svg width="96" height="96" viewBox="0 0 96 96" opacity=".15"><rect x="2" y="2" width="92" height="92" rx="8" fill="#0f0f22" stroke="#3b82f6" stroke-width="1"/><circle cx="48" cy="48" r="40" fill="none" stroke="#2563eb" stroke-width="1.5"/><circle cx="48" cy="48" r="30" fill="none" stroke="#3b82f6" stroke-width="1.2"/><circle cx="48" cy="48" r="20" fill="none" stroke="#60a5fa" stroke-width="1"/><circle cx="48" cy="48" r="11" fill="#0f0f22" stroke="#93c5fd" stroke-width="1"/><circle cx="48" cy="48" r="4.5" fill="#3b82f6"/></svg></div>
+<div class="float-el" id="fl3" style="right:18%;top:12%"><svg width="56" height="56" viewBox="0 0 56 56" opacity=".11"><circle cx="28" cy="28" r="26" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="4 3"/><circle cx="28" cy="28" r="16" fill="none" stroke="#8b5cf6" stroke-width="1"/></svg></div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-bg"></div>
+  <div style="position:relative;z-index:2">
+    <div class="badge"><span data-k="heroBadge">⚡ Professionelle Eventtechnik</span></div>
+    <h1><span data-k="heroLine1">Sound, der deine</span><br><span class="grad"><span data-k="heroLine2">Party bewegt.</span></span></h1>
+    <p><span data-k="heroSub">Professionelle PA-Anlagen für 50 bis 300 Personen – inkl. optionalem DJ-Service. Wähle die Anlage, die zu deinem Event passt.</span></p>
+    <div class="ctas">
+      <a href="#anlagen" class="btn btn-pri">Anlage auswählen</a>
+      <a href="#kontakt" class="btn btn-sec">Jetzt anfragen</a>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="n"><span data-k="s1n">3</span></div><div class="l"><span data-k="s1l">Anlagen verfügbar</span></div></div>
+      <div class="stat"><div class="n"><span data-k="s2n">300</span></div><div class="l"><span data-k="s2l">Personen max.</span></div></div>
+      <div class="stat"><div class="n"><span data-k="s3n">24/7</span></div><div class="l"><span data-k="s3l">Erreichbar</span></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDESHOW -->
+<section>
+  <div class="sec-badge reveal"><span data-k="slideBadge">Equipment</span></div>
+  <h2 class="sec-title reveal"><span data-k="slideTitle">Unser Setup</span></h2>
+  <div class="slideshow-wrap reveal">
+    <div class="slides" id="slides">
+      <div class="slide"><div class="slide-info">
+        <h3><span data-k="sl1t1">Full-Range</span> <span class="grad"><span data-k="sl1t2">PA-System</span></span></h3>
+        <p><span data-k="sl1desc">Kristallklarer Klang für jede Raumgröße – kalibriert für maximalen Druck und perfekte Sprachverständlichkeit.</span></p>
+        <div class="spec-list"><div class="spec"><span data-k="sl1s1">Aktives 2-Wege-System</span></div><div class="spec"><span data-k="sl1s2">DSP-Processing & Limiter</span></div><div class="spec"><span data-k="sl1s3">Plug & Play oder mit Techniker</span></div></div>
+      </div><div class="slide-art"><svg width="160" height="240" viewBox="0 0 160 240"><defs><radialGradient id="g1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#2a1f5a"/><stop offset="100%" stop-color="#0a0a1a"/></radialGradient></defs><rect x="12" y="4" width="136" height="232" rx="11" fill="#0d0d20" stroke="#8b5cf6" stroke-width="1.2"/><rect x="18" y="10" width="124" height="220" rx="9" fill="#080815"/><circle cx="80" cy="44" r="20" fill="url(#g1)" stroke="#6d5acd" stroke-width="1.2"/><circle cx="80" cy="44" r="11" fill="#080815" stroke="#8b5cf6" stroke-width="1"/><circle cx="80" cy="44" r="5" fill="#1a1535" stroke="#a78bfa" stroke-width=".8"/><circle cx="80" cy="44" r="2" fill="#8b5cf6"/><circle cx="80" cy="152" r="58" fill="url(#g1)" stroke="#5a4aad" stroke-width="1.5"/><circle cx="80" cy="152" r="48" fill="#080815" stroke="#6d5acd" stroke-width="1.2"/><circle cx="80" cy="152" r="37" fill="#0a0a1a" stroke="#8b5cf6" stroke-width="1"/><circle cx="80" cy="152" r="26" fill="#0d0d22" stroke="#a78bfa" stroke-width=".8"/><circle cx="80" cy="152" r="14" fill="#14143a"/><circle cx="80" cy="152" r="6" fill="#1e1e4a"/><circle cx="80" cy="152" r="2.5" fill="#8b5cf6"/></svg></div></div>
+
+      <div class="slide"><div class="slide-info">
+        <h3><span data-k="sl2t1">18"</span> <span class="grad"><span data-k="sl2t2">Subwoofer</span></span></h3>
+        <p><span data-k="sl2desc">Bass, den du nicht nur hörst, sondern fühlst. Druckvoll, präzise, stack-fähig.</span></p>
+        <div class="spec-list"><div class="spec"><span data-k="sl2s1">18" Premium-Treiber</span></div><div class="spec"><span data-k="sl2s2">Aktiv mit integr. Verstärker</span></div><div class="spec"><span data-k="sl2s3">Stack-fähig bis 4 Einheiten</span></div></div>
+      </div><div class="slide-art"><svg width="190" height="190" viewBox="0 0 190 190"><defs><radialGradient id="g2" cx="50%" cy="40%" r="60%"><stop offset="0%" stop-color="#1a2a4a"/><stop offset="100%" stop-color="#06060e"/></radialGradient></defs><rect x="4" y="4" width="182" height="182" rx="13" fill="#0d0d20" stroke="#3b82f6" stroke-width="1.3"/><rect x="11" y="11" width="168" height="168" rx="9" fill="#080815"/><circle cx="95" cy="95" r="74" fill="url(#g2)" stroke="#1d4ed8" stroke-width="1.5"/><circle cx="95" cy="95" r="63" fill="#080815" stroke="#2563eb" stroke-width="1.3"/><circle cx="95" cy="95" r="51" fill="#0a0a1a" stroke="#3b82f6" stroke-width="1.1"/><circle cx="95" cy="95" r="38" fill="#0d0d22" stroke="#60a5fa" stroke-width="1"/><circle cx="95" cy="95" r="25" fill="#111130" stroke="#93c5fd" stroke-width=".9"/><circle cx="95" cy="95" r="13" fill="#1a1a3a"/><circle cx="95" cy="95" r="2.5" fill="#3b82f6"/></svg></div></div>
+
+      <div class="slide"><div class="slide-info">
+        <h3><span data-k="sl3t1">DJ-</span><span class="grad"><span data-k="sl3t2">Setup</span></span></h3>
+        <p><span data-k="sl3desc">Vollständiges DJ-Equipment inklusive Mischpult und Controller. Optionaler DJ buchbar.</span></p>
+        <div class="spec-list"><div class="spec"><span data-k="sl3s1">4-Kanal-Mischpult</span></div><div class="spec"><span data-k="sl3s2">Pioneer DJ Controller</span></div><div class="spec"><span data-k="sl3s3">House, Hip-Hop, Charts & mehr</span></div></div>
+      </div><div class="slide-art"><svg width="200" height="150" viewBox="0 0 200 150"><rect x="8" y="28" width="184" height="110" rx="10" fill="#0f0f22" stroke="#8b5cf6" stroke-width="1.2"/><rect x="14" y="34" width="172" height="100" rx="8" fill="#080815"/><rect x="26" y="48" width="7" height="52" rx="3.5" fill="#1a1a35" stroke="#333" stroke-width=".8"/><rect x="25" y="68" width="9" height="9" rx="2" fill="#8b5cf6"/><rect x="50" y="48" width="7" height="52" rx="3.5" fill="#1a1a35" stroke="#333" stroke-width=".8"/><rect x="49" y="60" width="9" height="9" rx="2" fill="#8b5cf6"/><rect x="74" y="48" width="7" height="52" rx="3.5" fill="#1a1a35" stroke="#333" stroke-width=".8"/><rect x="73" y="76" width="9" height="9" rx="2" fill="#3b82f6"/><rect x="98" y="48" width="7" height="52" rx="3.5" fill="#1a1a35" stroke="#333" stroke-width=".8"/><rect x="97" y="55" width="9" height="9" rx="2" fill="#3b82f6"/><circle cx="137" cy="57" r="8" fill="#1a1a35" stroke="#555" stroke-width="1"/><circle cx="137" cy="57" r="4" fill="#0d0d20"/><circle cx="137" cy="53.5" r="1.8" fill="#8b5cf6"/><circle cx="160" cy="57" r="8" fill="#1a1a35" stroke="#555" stroke-width="1"/><circle cx="160" cy="57" r="4" fill="#0d0d20"/><circle cx="160" cy="53.5" r="1.8" fill="#3b82f6"/><rect x="26" y="102" width="96" height="22" rx="4" fill="#0a0f1a" stroke="#1d4ed8" stroke-width="1"/><text x="74" y="116" text-anchor="middle" fill="#3b82f6" font-size="8.5" font-family="monospace">LRX EVENTTECHNIK</text></svg></div></div>
+    </div>
+    <button class="sarrow" id="prevSlide">‹</button>
+    <button class="sarrow" id="nextSlide">›</button>
+    <div class="slide-dots" id="dotRow"><button class="sdot active" onclick="goSlide(0)"></button><button class="sdot" onclick="goSlide(1)"></button><button class="sdot" onclick="goSlide(2)"></button></div>
+  </div>
+</section>
+
+<!-- PRODUCTS + CALENDARS -->
+<section id="anlagen">
+  <div class="sec-badge reveal"><span data-k="prodBadge">Anlagen & Verfügbarkeit</span></div>
+  <h2 class="sec-title reveal"><span data-k="prodTitle">Wähle deine Anlage</span></h2>
+  <p class="sec-sub reveal"><span data-k="prodSub">Klicke auf eine Anlage, um die aktuelle Verfügbarkeit direkt zu prüfen.</span></p>
+  <div class="prod-grid reveal" id="prodGrid"></div>
+  <div class="cal-panel" id="calPanel">
+    <div class="cal-inner">
+      <div class="cal-ph"><div class="cal-dot" id="calDot"></div><div><h3 id="calTitle"></h3><span id="calSub"></span></div></div>
+      <div class="cal-legend"><div class="leg"><div class="ldot" style="background:rgba(16,185,129,.5)"></div>Verfügbar</div><div class="leg"><div class="ldot" style="background:rgba(239,68,68,.5)"></div>Gebucht</div><div class="leg"><div class="ldot" style="border:1px solid #8b5cf6;background:transparent"></div>Heute</div></div>
+      <div class="cal-months" id="calGrid"></div>
+      <div class="cal-cta"><p>Freier Termin? Schreib uns direkt.</p><a href="mailto:lrx.eventtechnik@gmail.com" id="calLink">Jetzt anfragen ↗</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section id="leistungen">
+  <div class="sec-badge reveal"><span data-k="svcBadge">Leistungen</span></div>
+  <h2 class="sec-title reveal"><span data-k="svcTitle">Was wir anbieten</span></h2>
+  <div class="services">
+    <div class="sc reveal"><div class="sc-icon" style="background:rgba(139,92,246,.15)"><span data-k="sc1icon">🔊</span></div><h3><span data-k="sc1title">PA-Anlage Verleih</span></h3><p><span data-k="sc1desc">Drei Anlagengrößen für 50, 150 und 300 Personen – auf Wunsch mit Aufbau & Abbau-Service.</span></p><span class="sc-tag" style="background:rgba(139,92,246,.15);color:#c4b5fd"><span data-k="sc1tag">50 – 300 Personen</span></span></div>
+    <div class="sc reveal"><div class="sc-icon" style="background:rgba(59,130,246,.15)"><span data-k="sc2icon">🎧</span></div><h3><span data-k="sc2title">DJ-Service</span></h3><p><span data-k="sc2desc">Optionaler DJ-Service für die perfekte Stimmung – House, Hip-Hop, Charts und mehr.</span></p><span class="sc-tag" style="background:rgba(59,130,246,.15);color:#93c5fd"><span data-k="sc2tag">Optional buchbar</span></span></div>
+    <div class="sc reveal"><div class="sc-icon" style="background:rgba(16,185,129,.15)"><span data-k="sc3icon">⚡</span></div><h3><span data-k="sc3title">Aufbau & Support</span></h3><p><span data-k="sc3desc">Aufbau, Soundcheck, technischer Support und Abbau nach dem Event – alles inklusive.</span></p><span class="sc-tag" style="background:rgba(16,185,129,.15);color:#6ee7b7"><span data-k="sc3tag">Rundum-sorglos</span></span></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-badge reveal"><span data-k="whyBadge">Warum wir</span></div>
+  <h2 class="sec-title reveal"><span data-k="whyTitle">Dein Event in besten Händen</span></h2>
+  <div class="why-grid">
+    <div class="wi reveal"><div class="wi-icon"><span data-k="w1icon">🎯</span></div><h4><span data-k="w1title">Profi-Equipment</span></h4><p><span data-k="w1desc">Nur erstklassige Systeme für perfekten Klang auf jedem Event.</span></p></div>
+    <div class="wi reveal"><div class="wi-icon"><span data-k="w2icon">⚡</span></div><h4><span data-k="w2title">Flexible Buchung</span></h4><p><span data-k="w2desc">Kurzfristig oder langfristig – wir passen uns an.</span></p></div>
+    <div class="wi reveal"><div class="wi-icon"><span data-k="w3icon">💬</span></div><h4><span data-k="w3title">Direkt & schnell</span></h4><p><span data-k="w3desc">Keine langen Wartezeiten – persönlich und fair.</span></p></div>
+    <div class="wi reveal"><div class="wi-icon"><span data-k="w4icon">🛡️</span></div><h4><span data-k="w4title">Zuverlässig</span></h4><p><span data-k="w4desc">Pünktlich, vorbereitet, professionell – immer.</span></p></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-badge reveal"><span data-k="evtBadge">Events</span></div>
+  <h2 class="sec-title reveal"><span data-k="evtTitle">Perfekt für jeden Anlass</span></h2>
+  <div class="evt-grid">
+    <div class="ec reveal"><span class="ei"><span data-k="e1i">🎉</span></span><p><span data-k="e1l">Partys</span></p></div>
+    <div class="ec reveal"><span class="ei"><span data-k="e2i">🎂</span></span><p><span data-k="e2l">Geburtstage</span></p></div>
+    <div class="ec reveal"><span class="ei"><span data-k="e3i">🎓</span></span><p><span data-k="e3l">Abifeiern</span></p></div>
+    <div class="ec reveal"><span class="ei"><span data-k="e4i">🎪</span></span><p><span data-k="e4l">Festivals</span></p></div>
+    <div class="ec reveal"><span class="ei"><span data-k="e5i">🏢</span></span><p><span data-k="e5l">Firmenfeiern</span></p></div>
+    <div class="ec reveal"><span class="ei"><span data-k="e6i">💍</span></span><p><span data-k="e6l">Hochzeiten</span></p></div>
+  </div>
+</section>
+
+<section id="kontakt">
+  <div class="sec-badge reveal"><span data-k="ctaBadge">Kontakt</span></div>
+  <h2 class="sec-title reveal"><span data-k="ctaTitle">Jetzt anfragen</span></h2>
+  <p class="sec-sub reveal"><span data-k="ctaSub">Schreib uns direkt – wir melden uns schnell zurück.</span></p>
+  <div class="cg">
+    <div class="cc reveal"><h3><span data-k="ig1">📸 Instagram</span></h3><p><span data-k="ig2">Schau dir unser Setup an, schick uns eine DM oder folge uns für aktuelle Infos.</span></p><a id="igLink" href="https://instagram.com/lrx.eventtechnik" class="cb ig"><span data-k="igBtn">@lrx.eventtechnik</span></a></div>
+    <div class="cc reveal"><h3><span data-k="em1">✉️ E-Mail</span></h3><p><span data-k="em2">Für Buchungsanfragen und Angebote – Antwort innerhalb von 24 Stunden.</span></p><a id="emLink" href="mailto:lrx.eventtechnik@gmail.com" class="cb em"><span data-k="emBtn">lrx.eventtechnik@gmail.com</span></a></div>
+  </div>
+</section>
+
+<footer>
+  <p><span data-k="footerTxt">© 2026 LRX Eventtechnik · Professioneller Sound für dein Event</span></p>
+  <p style="margin-top:.5rem;font-size:.7rem"><span id="adminTrigger">⚙ Admin</span></p>
+</footer>
+
+<!-- ADMIN PANEL -->
+<div class="apanel" id="adminPanel">
+  <div class="apanel-head"><strong>⚙ Admin-Modus</strong><button class="apanel-close" onclick="exitAdmin()">✕</button></div>
+  <div class="atabs">
+    <button class="atab active" onclick="switchTab(0)">📅 Kalender</button>
+    <button class="atab" onclick="switchTab(1)">🎨 Design</button>
+    <button class="atab" onclick="switchTab(2)">📬 Kontakt</button>
+  </div>
+
+  <!-- TAB 0: KALENDER -->
+  <div class="atab-content active" id="tab0">
+    <div class="ainfo">Wähle eine Anlage, dann klicke im Kalender auf Tage um sie zu buchen / freizugeben.</div>
+    <div id="aCalBtns"></div>
+  </div>
+
+  <!-- TAB 1: DESIGN -->
+  <div class="atab-content" id="tab1">
+    <div class="ainfo">Ändere die Akzentfarbe jeder Anlage. Alle Texte auf der Seite sind direkt anklickbar und editierbar.</div>
+    <div id="aColorRows"></div>
+  </div>
+
+  <!-- TAB 2: KONTAKT -->
+  <div class="atab-content" id="tab2">
+    <div class="afield"><label>Instagram-Handle</label><input id="aIg" placeholder="@lrx.eventtechnik" value="lrx.eventtechnik"></div>
+    <div class="afield"><label>E-Mail-Adresse</label><input id="aEm" placeholder="info@example.de" value="lrx.eventtechnik@gmail.com"></div>
+    <button class="asave-btn" onclick="saveContact()">Kontakt speichern</button>
+    <div class="asaved" id="aSavedMsg"></div>
+  </div>
+
+  <div class="apanel-foot"><button class="aexit-btn" onclick="exitAdmin()">Admin-Modus beenden</button></div>
+</div>
+
+<script>
+/* ===== CONTENT ===== */
+const DEF = {
+  heroBadge:'⚡ Professionelle Eventtechnik',heroLine1:'Sound, der deine',heroLine2:'Party bewegt.',
+  heroSub:'Professionelle PA-Anlagen für 50 bis 300 Personen – inkl. optionalem DJ-Service. Wähle die Anlage, die zu deinem Event passt.',
+  s1n:'3',s1l:'Anlagen verfügbar',s2n:'300',s2l:'Personen max.',s3n:'24/7',s3l:'Erreichbar',
+  slideBadge:'Equipment',slideTitle:'Unser Setup',
+  sl1t1:'Full-Range',sl1t2:'PA-System',sl1desc:'Kristallklarer Klang für jede Raumgröße – kalibriert für maximalen Druck und perfekte Sprachverständlichkeit.',sl1s1:'Aktives 2-Wege-System',sl1s2:'DSP-Processing & Limiter',sl1s3:'Plug & Play oder mit Techniker',
+  sl2t1:'18"',sl2t2:'Subwoofer',sl2desc:'Bass, den du nicht nur hörst, sondern fühlst. Druckvoll, präzise, stack-fähig.',sl2s1:'18" Premium-Treiber',sl2s2:'Aktiv mit integr. Verstärker',sl2s3:'Stack-fähig bis 4 Einheiten',
+  sl3t1:'DJ-',sl3t2:'Setup',sl3desc:'Vollständiges DJ-Equipment inklusive Mischpult und Controller. Optionaler DJ buchbar.',sl3s1:'4-Kanal-Mischpult',sl3s2:'Pioneer DJ Controller',sl3s3:'House, Hip-Hop, Charts & mehr',
+  prodBadge:'Anlagen & Verfügbarkeit',prodTitle:'Wähle deine Anlage',prodSub:'Klicke auf eine Anlage, um die aktuelle Verfügbarkeit direkt zu prüfen.',
+  p1name:'Kompakt-System',p1cap:'Bis 50 Personen',p1desc:'Ideal für kleine Partys, Geburtstage und Indoor-Events.',p1s1:'2× Full-Range Tops',p1s2:'1× Kompakt-Subwoofer',p1s3:'Kabel & Stativ inklusive',p1s4:'Einfache Selbstbedienung',
+  p2name:'Party-System',p2cap:'Bis 150 Personen',p2desc:'Das perfekte Setup für Gartenpartys, Clubnächte und mittlere Events.',p2s1:'4× Full-Range Tops',p2s2:'2× 18" Subwoofer',p2s3:'Digitales Mischpult',p2s4:'Aufbau auf Wunsch',
+  p3name:'Festival-System',p3cap:'Bis 300 Personen',p3desc:'Maximale Power für große Events, Festivals und Outdoor-Veranstaltungen.',p3s1:'8× Line-Array Tops',p3s2:'4× 18" Subwoofer',p3s3:'Vollsystembetreuung',p3s4:'Optionaler DJ-Service',
+  svcBadge:'Leistungen',svcTitle:'Was wir anbieten',
+  sc1icon:'🔊',sc1title:'PA-Anlage Verleih',sc1desc:'Drei Anlagengrößen für 50, 150 und 300 Personen – auf Wunsch mit Aufbau & Abbau-Service.',sc1tag:'50 – 300 Personen',
+  sc2icon:'🎧',sc2title:'DJ-Service',sc2desc:'Optionaler DJ-Service für die perfekte Stimmung – House, Hip-Hop, Charts und mehr.',sc2tag:'Optional buchbar',
+  sc3icon:'⚡',sc3title:'Aufbau & Support',sc3desc:'Aufbau, Soundcheck, technischer Support und Abbau nach dem Event – alles inklusive.',sc3tag:'Rundum-sorglos',
+  whyBadge:'Warum wir',whyTitle:'Dein Event in besten Händen',
+  w1icon:'🎯',w1title:'Profi-Equipment',w1desc:'Nur erstklassige Systeme für perfekten Klang auf jedem Event.',
+  w2icon:'⚡',w2title:'Flexible Buchung',w2desc:'Kurzfristig oder langfristig – wir passen uns an.',
+  w3icon:'💬',w3title:'Direkt & schnell',w3desc:'Keine langen Wartezeiten – persönlich und fair.',
+  w4icon:'🛡️',w4title:'Zuverlässig',w4desc:'Pünktlich, vorbereitet, professionell – immer.',
+  evtBadge:'Events',evtTitle:'Perfekt für jeden Anlass',
+  e1i:'🎉',e1l:'Partys',e2i:'🎂',e2l:'Geburtstage',e3i:'🎓',e3l:'Abifeiern',e4i:'🎪',e4l:'Festivals',e5i:'🏢',e5l:'Firmenfeiern',e6i:'💍',e6l:'Hochzeiten',
+  ctaBadge:'Kontakt',ctaTitle:'Jetzt anfragen',ctaSub:'Schreib uns direkt – wir melden uns schnell zurück.',
+  ig1:'📸 Instagram',ig2:'Schau dir unser Setup an, schick uns eine DM oder folge uns für aktuelle Infos.',igBtn:'@lrx.eventtechnik',
+  em1:'✉️ E-Mail',em2:'Für Buchungsanfragen und Angebote – Antwort innerhalb von 24 Stunden.',emBtn:'lrx.eventtechnik@gmail.com',
+  footerTxt:'© 2026 LRX Eventtechnik · Professioneller Sound für dein Event'
+};
+
+const PROD_DEF = [
+  {id:'compact',color:'#10b981',svgKey:'compact'},
+  {id:'party',color:'#8b5cf6',svgKey:'party'},
+  {id:'festival',color:'#3b82f6',svgKey:'festival'}
+];
+
+let C = {...DEF};
+let prodColors = {compact:'#10b981',party:'#8b5cf6',festival:'#3b82f6'};
+let bookedMap = {};
+let viewOff=0,selProd=null,adminMode=false;
+const today=new Date();today.setHours(0,0,0,0);
+const MONTHS=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const DAYS=['Mo','Di','Mi','Do','Fr','Sa','So'];
+function dk(y,m,d){return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`}
+
+/* ===== LOAD / SAVE CONTENT ===== */
+async function loadEverything(){
+  try{
+    const r=await window.storage.get('lrx-content-v2');
+    if(r)C={...DEF,...JSON.parse(r.value)};
+  }catch{}
+  try{
+    const r=await window.storage.get('lrx-colors-v2');
+    if(r)prodColors={...prodColors,...JSON.parse(r.value)};
+  }catch{}
+  applyContent();
+  applyColors();
+  await loadCalendars();
+  buildProdCards();
+  buildAdminPanelContent();
+}
+
+function applyContent(){
+  document.querySelectorAll('[data-k]').forEach(el=>{
+    if(C[el.dataset.k]!==undefined)el.textContent=C[el.dataset.k];
+  });
+  // Update contact links
+  const ig=C['igBtn']||'lrx.eventtechnik';
+  const em=C['emBtn']||'lrx.eventtechnik@gmail.com';
+  document.getElementById('igLink').href=`https://instagram.com/${ig.replace('@','')}`;
+  document.getElementById('emLink').href=`mailto:${em}`;
+  document.getElementById('calLink').href=`mailto:${em}`;
+}
+
+async function saveContent(){
+  try{await window.storage.set('lrx-content-v2',JSON.stringify(C));}catch{}
+}
+async function saveColors(){
+  try{await window.storage.set('lrx-colors-v2',JSON.stringify(prodColors));}catch{}
+}
+
+/* ===== PRODUCT COLORS ===== */
+function applyColors(){
+  PROD_DEF.forEach(p=>{
+    const col=prodColors[p.id]||p.color;
+    document.querySelectorAll(`.pcard-${p.id}`).forEach(el=>{
+      el.style.setProperty('--pc',col);
+    });
+  });
+}
+
+/* ===== PRODUCT CARDS ===== */
+function svgArt(id,col){
+  if(id==='compact') return `<svg width="70" height="110" viewBox="0 0 70 110"><rect x="2" y="2" width="66" height="106" rx="7" fill="#0d0d20" stroke="${col}" stroke-width="1.2"/><circle cx="35" cy="27" r="12" fill="none" stroke="${col}" stroke-width="1.2" opacity=".7"/><circle cx="35" cy="27" r="6" fill="none" stroke="${col}" stroke-width="1" opacity=".9"/><circle cx="35" cy="27" r="2.5" fill="${col}"/><circle cx="35" cy="72" r="26" fill="none" stroke="${col}" stroke-width="1.4" opacity=".5"/><circle cx="35" cy="72" r="19" fill="none" stroke="${col}" stroke-width="1.1" opacity=".7"/><circle cx="35" cy="72" r="12" fill="none" stroke="${col}" stroke-width="1" opacity=".9"/><circle cx="35" cy="72" r="6" fill="#0d0d20" stroke="${col}" stroke-width=".8"/><circle cx="35" cy="72" r="2.5" fill="${col}"/></svg>`;
+  if(id==='party') return `<svg width="90" height="130" viewBox="0 0 90 130"><rect x="4" y="2" width="82" height="126" rx="8" fill="#0d0d20" stroke="${col}" stroke-width="1.2"/><circle cx="45" cy="32" r="16" fill="none" stroke="${col}" stroke-width="1.3" opacity=".6"/><circle cx="45" cy="32" r="9" fill="none" stroke="${col}" stroke-width="1" opacity=".85"/><circle cx="45" cy="32" r="3.5" fill="${col}"/><circle cx="45" cy="85" r="36" fill="none" stroke="${col}" stroke-width="1.4" opacity=".4"/><circle cx="45" cy="85" r="27" fill="none" stroke="${col}" stroke-width="1.2" opacity=".6"/><circle cx="45" cy="85" r="18" fill="none" stroke="${col}" stroke-width="1" opacity=".8"/><circle cx="45" cy="85" r="10" fill="#0d0d20" stroke="${col}" stroke-width=".9" opacity=".9"/><circle cx="45" cy="85" r="4" fill="${col}"/></svg>`;
+  return `<svg width="110" height="130" viewBox="0 0 110 130"><rect x="4" y="2" width="102" height="126" rx="9" fill="#0d0d20" stroke="${col}" stroke-width="1.2"/><circle cx="55" cy="32" r="20" fill="none" stroke="${col}" stroke-width="1.4" opacity=".4"/><circle cx="55" cy="32" r="13" fill="none" stroke="${col}" stroke-width="1.1" opacity=".65"/><circle cx="55" cy="32" r="7" fill="none" stroke="${col}" stroke-width="1" opacity=".85"/><circle cx="55" cy="32" r="3" fill="${col}"/><circle cx="55" cy="90" r="34" fill="none" stroke="${col}" stroke-width="1.5" opacity=".35"/><circle cx="55" cy="90" r="26" fill="none" stroke="${col}" stroke-width="1.3" opacity=".55"/><circle cx="55" cy="90" r="18" fill="none" stroke="${col}" stroke-width="1.1" opacity=".75"/><circle cx="55" cy="90" r="11" fill="#080815" stroke="${col}" stroke-width="1" opacity=".9"/><circle cx="55" cy="90" r="5" fill="#1e3a6a"/><circle cx="55" cy="90" r="2" fill="${col}"/></svg>`;
+}
+
+function buildProdCards(){
+  const grid=document.getElementById('prodGrid');
+  grid.innerHTML='';
+  const prods=[
+    {id:'compact',ni:1},{id:'party',ni:2},{id:'festival',ni:3}
+  ];
+  prods.forEach(({id,ni})=>{
+    const col=prodColors[id];
+    const name=C[`p${ni}name`],cap=C[`p${ni}cap`],desc=C[`p${ni}desc`];
+    const specs=[C[`p${ni}s1`],C[`p${ni}s2`],C[`p${ni}s3`],C[`p${ni}s4`]].filter(Boolean);
+
+    const card=document.createElement('div');
+    card.className=`prod-card pcard-${id}`;
+    card.style.setProperty('--pc',col);
+    card.id=`card-${id}`;
+
+    // Color picker (admin)
+    const cpWrap=document.createElement('div');cpWrap.className='prod-color-wrap';
+    const cpBtn=document.createElement('div');cpBtn.className='prod-color-btn';cpBtn.style.background=col;
+    cpBtn.title='Farbe ändern';
+    const cpInput=document.createElement('input');cpInput.type='color';cpInput.value=col;
+    cpInput.addEventListener('input',e=>{
+      const nc=e.target.value;
+      prodColors[id]=nc;
+      cpBtn.style.background=nc;
+      card.style.setProperty('--pc',nc);
+      card.querySelector('.prod-art').innerHTML=svgArt(id,nc);
+      card.querySelector('.prod-cap-badge').style.color=nc;
+      saveColors();
+      updateAdminColorRows();
+    });
+    cpBtn.appendChild(cpInput);cpWrap.appendChild(cpBtn);
+    card.appendChild(cpWrap);
+
+    const selBadge=document.createElement('div');selBadge.className='selected-badge';selBadge.textContent='✓ Ausgewählt';
+    card.appendChild(selBadge);
+
+    const capBadge=document.createElement('div');capBadge.className='prod-cap-badge';capBadge.style.color=col;
+    capBadge.innerHTML=`<span data-k="p${ni}cap">${cap}</span>`;
+    card.appendChild(capBadge);
+
+    const art=document.createElement('div');art.className='prod-art';art.innerHTML=svgArt(id,col);
+    card.appendChild(art);
+
+    const h3=document.createElement('h3');h3.innerHTML=`<span data-k="p${ni}name">${name}</span>`;card.appendChild(h3);
+    const p=document.createElement('p');p.innerHTML=`<span data-k="p${ni}desc">${desc}</span>`;card.appendChild(p);
+
+    const specList=document.createElement('div');specList.className='prod-specs';
+    specs.forEach((s,i)=>{
+      const row=buildSpecRow(id,ni,i+1,s);
+      specList.appendChild(row);
+    });
+    card.appendChild(specList);
+
+    const addBtn=document.createElement('button');addBtn.className='add-spec-btn';addBtn.textContent='+ Eigenschaft hinzufügen';
+    addBtn.onclick=(e)=>{e.stopPropagation();addSpec(id,ni,specList,addBtn);};
+    card.appendChild(addBtn);
+
+    const btn=document.createElement('button');btn.className='prod-btn';btn.textContent='Verfügbarkeit prüfen';
+    btn.onclick=(e)=>{e.stopPropagation();selectProduct(id,ni);};
+    card.appendChild(btn);
+
+    card.addEventListener('click',()=>selectProduct(id,ni));
+
+    if(adminMode)enableEditingOnEl(card);
+    grid.appendChild(card);
+  });
+}
+
+function buildSpecRow(pid,ni,idx,text){
+  const row=document.createElement('div');row.className='prod-spec';
+  const keyName=`p${ni}s${idx}`;
+  const span=document.createElement('span');span.dataset.k=keyName;span.textContent=text;
+  const del=document.createElement('button');del.className='del-spec';del.textContent='×';del.title='Löschen';
+  del.onclick=(e)=>{
+    e.stopPropagation();
+    C[keyName]='';saveContent();
+    row.remove();
+  };
+  row.appendChild(span);row.appendChild(del);
+  if(adminMode){span.contentEditable='true';span.classList.add('admin-editable');attachSave(span);}
+  return row;
+}
+
+function addSpec(pid,ni,list,addBtn){
+  // Find next available index
+  let idx=1;
+  while(C[`p${ni}s${idx}`])idx++;
+  if(idx>8)return;
+  C[`p${ni}s${idx}`]='Neue Eigenschaft';
+  saveContent();
+  const row=buildSpecRow(pid,ni,idx,'Neue Eigenschaft');
+  list.insertBefore(row,addBtn);
+  if(adminMode){
+    const span=row.querySelector('[data-k]');
+    span.contentEditable='true';span.classList.add('admin-editable');
+    setTimeout(()=>{span.focus();document.execCommand('selectAll');},50);
+  }
+}
+
+/* ===== ADMIN INLINE EDITING ===== */
+function attachSave(el){
+  el.addEventListener('blur',()=>{C[el.dataset.k]=el.textContent;saveContent();updateLiveLinks();});
+  el.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();el.blur();}});
+}
+
+function updateLiveLinks(){
+  const ig=C['igBtn']||'lrx.eventtechnik';
+  const em=C['emBtn']||'lrx.eventtechnik@gmail.com';
+  document.getElementById('igLink').href=`https://instagram.com/${ig.replace('@','')}`;
+  document.getElementById('emLink').href=`mailto:${em}`;
+  document.getElementById('calLink').href=`mailto:${em}`;
+}
+
+function enableEditingOnEl(root=document){
+  root.querySelectorAll('[data-k]').forEach(el=>{
+    el.contentEditable='true';
+    el.classList.add('admin-editable');
+    // Remove old listener first to avoid duplicates
+    el.removeEventListener('blur',el._saveFn||function(){});
+    el._saveFn=()=>{C[el.dataset.k]=el.textContent;saveContent();updateLiveLinks();};
+    el.addEventListener('blur',el._saveFn);
+    el.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();el.blur();}});
+  });
+}
+
+function disableEditing(){
+  document.querySelectorAll('[data-k]').forEach(el=>{
+    el.contentEditable='false';
+    el.classList.remove('admin-editable');
+  });
+}
+
+/* ===== PRODUCT CALENDAR ===== */
+function selectProduct(id,ni){
+  selProd=id;viewOff=0;
+  document.querySelectorAll('.prod-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById(`card-${id}`).classList.add('selected');
+  const col=prodColors[id];
+  document.getElementById('calDot').style.background=col;
+  document.getElementById('calTitle').textContent=C[`p${ni}name`]||id;
+  document.getElementById('calSub').textContent=(C[`p${ni}cap`]||'')+'  ·  Verfügbarkeitskalender';
+  const panel=document.getElementById('calPanel');
+  panel.classList.add('open');
+  renderCal();
+  updateAdminCalBtns();
+  setTimeout(()=>panel.scrollIntoView({behavior:'smooth',block:'nearest'}),80);
+}
+
+async function loadCalendars(){
+  const defOff={compact:[2,3,9,16,17],party:[4,5,10,11,23,24],festival:[3,10,11,17,24,25]};
+  const defOff2={compact:[5,12,19,26],party:[3,8,15,22],festival:[2,9,16,23]};
+  for(const p of PROD_DEF){
+    try{
+      const r=await window.storage.get(`lrx-cal-${p.id}`);
+      if(r){bookedMap[p.id]=new Set(JSON.parse(r.value));continue;}
+    }catch{}
+    const s=new Set();
+    (defOff[p.id]||[]).forEach(o=>{const d=new Date(today);d.setDate(d.getDate()+o);s.add(dk(d.getFullYear(),d.getMonth(),d.getDate()));});
+    (defOff2[p.id]||[]).forEach(o=>{const d=new Date(today);d.setDate(d.getDate()+35+o);s.add(dk(d.getFullYear(),d.getMonth(),d.getDate()));});
+    bookedMap[p.id]=s;
+    try{await window.storage.set(`lrx-cal-${p.id}`,JSON.stringify([...s]));}catch{}
+  }
+}
+
+async function saveCalProd(id){try{await window.storage.set(`lrx-cal-${id}`,JSON.stringify([...bookedMap[id]]));}catch{}}
+
+function renderCal(){
+  if(!selProd)return;
+  const g=document.getElementById('calGrid');g.innerHTML='';
+  const m1=new Date(today.getFullYear(),today.getMonth()+viewOff,1);
+  const m2=new Date(today.getFullYear(),today.getMonth()+viewOff+1,1);
+  g.appendChild(buildMonth(m1.getFullYear(),m1.getMonth(),viewOff>0,false));
+  g.appendChild(buildMonth(m2.getFullYear(),m2.getMonth(),false,true));
+}
+
+function buildMonth(year,month,showL,showR){
+  const w=document.createElement('div');
+  const hdr=document.createElement('div');hdr.className='cm-header';
+  const lb=document.createElement('button');lb.className='cn';lb.textContent='‹';lb.disabled=!showL;lb.onclick=()=>{viewOff=Math.max(0,viewOff-1);renderCal();};
+  const rb=document.createElement('button');rb.className='cn';rb.textContent='›';rb.disabled=!showR;rb.onclick=()=>{viewOff++;renderCal();};
+  const ti=document.createElement('h3');ti.textContent=`${MONTHS[month]} ${year}`;
+  hdr.appendChild(lb);hdr.appendChild(ti);hdr.appendChild(rb);w.appendChild(hdr);
+  const dh=document.createElement('div');dh.className='dh';
+  DAYS.forEach(d=>{const s=document.createElement('span');s.textContent=d;dh.appendChild(s);});
+  w.appendChild(dh);
+  const dd=document.createElement('div');dd.className='days';
+  let dow=new Date(year,month,1).getDay();dow=dow===0?6:dow-1;
+  for(let i=0;i<dow;i++){const e=document.createElement('div');e.className='day';dd.appendChild(e);}
+  const dim=new Date(year,month+1,0).getDate();
+  const bkd=bookedMap[selProd]||new Set();
+  for(let d=1;d<=dim;d++){
+    const el=document.createElement('div');el.className='day';
+    const dt=new Date(year,month,d);dt.setHours(0,0,0,0);
+    const key=dk(year,month,d);
+    const isPast=dt<today,isToday=dt.getTime()===today.getTime(),isBkd=bkd.has(key);
+    if(isPast)el.classList.add('past');else if(isBkd)el.classList.add('booked');else el.classList.add('avail');
+    if(isToday)el.classList.add('today');
+    if(adminMode&&!isPast)el.classList.add('cal-admin');
+    el.textContent=d;el.title=isPast?'Vergangen':isBkd?'Gebucht':'Verfügbar';
+    el.addEventListener('click',()=>{
+      if(!adminMode||isPast)return;
+      const b=bookedMap[selProd];
+      if(b.has(key))b.delete(key);else b.add(key);
+      saveCalProd(selProd);renderCal();
+    });
+    dd.appendChild(el);
+  }
+  w.appendChild(dd);return w;
+}
+
+/* ===== ADMIN PANEL ===== */
+function buildAdminPanelContent(){updateAdminCalBtns();updateAdminColorRows();updateContactFields();}
+
+function updateAdminCalBtns(){
+  const c=document.getElementById('aCalBtns');c.innerHTML='';
+  [{id:'compact',ni:1},{id:'party',ni:2},{id:'festival',ni:3}].forEach(({id,ni})=>{
+    const b=document.createElement('button');
+    b.className='aprod-btn'+(selProd===id?' active':'');
+    b.innerHTML=`<span class="aprod-dot" style="background:${prodColors[id]}"></span>${C[`p${ni}name`]||id}`;
+    b.onclick=()=>selectProduct(id,ni);c.appendChild(b);
+  });
+}
+
+function updateAdminColorRows(){
+  const c=document.getElementById('aColorRows');c.innerHTML='';
+  [{id:'compact',ni:1},{id:'party',ni:2},{id:'festival',ni:3}].forEach(({id,ni})=>{
+    const col=prodColors[id];
+    const row=document.createElement('div');row.className='adesign-row';
+    row.innerHTML=`<div class="adesign-label">${C[`p${ni}name`]||id}<small>${C[`p${ni}cap`]||''}</small></div>`;
+    const inp=document.createElement('input');inp.type='color';inp.className='acolor-input';inp.value=col;
+    inp.addEventListener('input',e=>{
+      const nc=e.target.value;
+      prodColors[id]=nc;
+      saveColors();
+      buildProdCards();
+      updateAdminColorRows();
+      if(adminMode)enableEditingOnEl();
+    });
+    row.appendChild(inp);c.appendChild(row);
+  });
+}
+
+function updateContactFields(){
+  document.getElementById('aIg').value=(C['igBtn']||'lrx.eventtechnik').replace('@','');
+  document.getElementById('aEm').value=C['emBtn']||'lrx.eventtechnik@gmail.com';
+}
+
+function saveContact(){
+  const ig=document.getElementById('aIg').value.replace('@','');
+  const em=document.getElementById('aEm').value;
+  C['igBtn']='@'+ig;C['emBtn']=em;
+  document.querySelectorAll('[data-k="igBtn"]').forEach(el=>el.textContent='@'+ig);
+  document.querySelectorAll('[data-k="emBtn"]').forEach(el=>el.textContent=em);
+  document.getElementById('igLink').href=`https://instagram.com/${ig}`;
+  document.getElementById('emLink').href=`mailto:${em}`;
+  document.getElementById('calLink').href=`mailto:${em}`;
+  saveContent();
+  const msg=document.getElementById('aSavedMsg');msg.textContent='✓ Gespeichert!';msg.style.opacity='1';
+  setTimeout(()=>msg.style.opacity='0',2500);
+}
+
+function switchTab(n){
+  document.querySelectorAll('.atab').forEach((t,i)=>t.classList.toggle('active',i===n));
+  document.querySelectorAll('.atab-content').forEach((t,i)=>t.classList.toggle('active',i===n));
+}
+
+/* ===== ADMIN TOGGLE ===== */
+document.getElementById('adminTrigger').addEventListener('click',()=>{
+  const pw=prompt('Admin-Passwort:');
+  if(pw!=='lrx2026')return;
+  adminMode=true;
+  document.body.classList.add('admin-on');
+  document.getElementById('adminPanel').classList.add('on');
+  document.getElementById('adminBanner').style.display='block';
+  enableEditingOnEl();
+  buildProdCards();
+  if(adminMode)enableEditingOnEl();
+  if(selProd)renderCal();
+  updateAdminCalBtns();
+});
+
+function exitAdmin(){
+  adminMode=false;
+  document.body.classList.remove('admin-on');
+  document.getElementById('adminPanel').classList.remove('on');
+  document.getElementById('adminBanner').style.display='none';
+  disableEditing();
+  if(selProd)renderCal();
+}
+
+/* ===== SLIDESHOW ===== */
+let cur=0;const tot=3;let autoT;
+const slidesEl=document.getElementById('slides');
+const sdots=[...document.getElementById('dotRow').children];
+function goSlide(n){cur=(n+tot)%tot;slidesEl.style.transform=`translateX(-${cur*100}%)`;sdots.forEach((d,i)=>d.classList.toggle('active',i===cur));clearInterval(autoT);autoT=setInterval(()=>goSlide(cur+1),4800);}
+document.getElementById('prevSlide').onclick=()=>goSlide(cur-1);
+document.getElementById('nextSlide').onclick=()=>goSlide(cur+1);
+autoT=setInterval(()=>goSlide(cur+1),4800);
+
+/* ===== PARALLAX ===== */
+const fls=[{el:document.getElementById('fl1'),s:.06},{el:document.getElementById('fl2'),s:.1},{el:document.getElementById('fl3'),s:.04}];
+let tick=false;
+window.addEventListener('scroll',()=>{if(!tick){requestAnimationFrame(()=>{const sy=window.scrollY;fls.forEach(f=>f.el.style.transform=`translateY(${sy*f.s}px)`);tick=false;});tick=true;}});
+
+/* ===== SCROLL REVEAL ===== */
+const obs=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('visible');}),{threshold:.1});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+loadEverything();
+</script>
+</body>
+</html>
